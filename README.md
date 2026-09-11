@@ -1,6 +1,6 @@
 # Google Drive MCP for ChatGPT
 
-A small remote MCP server that lets a ChatGPT custom app read/search one Google Drive account.
+A small remote MCP server that lets a ChatGPT custom app read/search the Google Drive account of the user who authorizes the app with Google OAuth.
 
 ## What it does
 
@@ -16,15 +16,7 @@ It is read-only: this server does not upload, edit, share, or delete files.
 ## Deploy
 
 1. Import this GitHub repository into Vercel.
-2. Add these Vercel environment variables:
-
-```text
-GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET
-GOOGLE_REFRESH_TOKEN
-MCP_API_KEY
-```
-
+2. No Google refresh token or MCP API key is required by the server now.
 3. Deploy.
 4. Your MCP endpoint is:
 
@@ -32,24 +24,35 @@ MCP_API_KEY
 https://YOUR-VERCEL-DOMAIN.vercel.app/api/mcp
 ```
 
-## Google OAuth
+## ChatGPT OAuth setup
 
-Create a Google Cloud project, enable the Google Drive API, create OAuth 2.0 credentials, and obtain a refresh token with the Drive read-only scope:
+This server expects the bearer token sent by ChatGPT to be a Google OAuth access token. Configure the ChatGPT custom MCP app with OAuth and use these Google OAuth endpoints:
+
+Authorization endpoint:
+
+`https://accounts.google.com/o/oauth2/v2/auth`
+
+Token endpoint:
+
+`https://oauth2.googleapis.com/token`
+
+Access token location: Authorization header with Bearer prefix.
+
+Scope:
 
 `https://www.googleapis.com/auth/drive.readonly`
 
-Never commit the OAuth client secret or refresh token to GitHub.
+Use your Google OAuth Web application Client ID and Client Secret in the ChatGPT OAuth configuration.
 
-## ChatGPT custom app
+### Google redirect URI
 
-In ChatGPT's custom MCP app/developer-mode UI, use the deployed `/api/mcp` URL as the server endpoint. Because this server uses a private bearer key, configure the app's authentication/header support to send:
+In ChatGPT's OAuth setup, copy the exact callback/redirect URL that ChatGPT gives you. Add that exact URL to the Google Cloud OAuth client's **Authorized redirect URIs**. Do not guess the callback URL.
 
-```text
-Authorization: Bearer YOUR_MCP_API_KEY
-```
-
-If your ChatGPT UI requires OAuth rather than a bearer header for custom apps, this single-user deployment is not the right authentication mode; add an OAuth layer instead of exposing the Google refresh token.
+If you previously created a refresh token for the old version of this server, you do not need to put that refresh token in Vercel. ChatGPT performs the user OAuth flow and sends the resulting access token to this MCP server.
 
 ## Important
 
-This is intentionally read-only. Do not give the server a broader Google Drive scope than necessary.
+- Keep the Google OAuth client secret private.
+- Keep the app read-only and use only the `drive.readonly` scope.
+- The MCP server does not store a Google refresh token.
+- Custom MCP apps should only be connected when you trust the server and its code.
